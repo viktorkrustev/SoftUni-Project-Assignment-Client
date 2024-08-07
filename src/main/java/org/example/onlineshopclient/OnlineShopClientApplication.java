@@ -1,6 +1,6 @@
 package org.example.onlineshopclient;
 
-import org.example.onlineshopclient.model.entity.User;
+import org.example.onlineshopclient.model.dto.UserDTO;
 import org.example.onlineshopclient.service.UserServiceClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -19,30 +19,29 @@ public class OnlineShopClientApplication implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        System.out.println("=== Fetching All Users ===");
         userServiceClient.fetchAllUsers();
 
-        User newUser = new User();
-        newUser.setId(3L);
+        UserDTO newUser = new UserDTO();
         newUser.setFirstName("John");
         newUser.setLastName("Doe");
         newUser.setUsername("johndoe");
         newUser.setEmail("john.doe@example.com");
         newUser.setPassword("password123");
 
-        System.out.println("Creating new user:");
+        System.out.println("\n=== Creating New User ===");
         userServiceClient.createUser(newUser);
 
-        // Примерен потребител за актуализиране
-        User updatedUser = new User();
+        UserDTO updatedUser = new UserDTO();
         updatedUser.setFirstName("Jane");
         updatedUser.setLastName("Doe");
-        updatedUser.setUsername("janedoe");
+        updatedUser.setUsername("janedoe123");
         updatedUser.setEmail("jane.doe@example.com");
 
-        System.out.println("Modifying user with ID 2:");
+        System.out.println("\n=== Modifying User with ID 2 ===");
         userServiceClient.modifyUser(2L, updatedUser);
 
-        System.out.println("Removing user with ID 3:");
+        System.out.println("\n=== Removing User with ID 3 ===");
         userServiceClient.removeUser(3L);
     }
 }

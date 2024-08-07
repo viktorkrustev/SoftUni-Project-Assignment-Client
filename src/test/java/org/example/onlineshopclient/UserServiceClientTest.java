@@ -1,105 +1,84 @@
 package org.example.onlineshopclient;
 
 import org.example.onlineshopclient.model.dto.UserDTO;
-import org.example.onlineshopclient.model.entity.User;
 import org.example.onlineshopclient.service.UserServiceClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 public class UserServiceClientTest {
 
     @Mock
-    private UserRestClient userRestClient;
+    private RestTemplate restTemplate;
 
     @InjectMocks
     private UserServiceClient userServiceClient;
 
+    private final String baseUrl = "http://localhost:8080/api";
+
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
+        userServiceClient = new UserServiceClient(restTemplate, baseUrl);
     }
 
     @Test
     public void testFetchAllUsers() {
-        List<UserDTO> userDTOs = Arrays.asList(new UserDTO(), new UserDTO());
-        when(userRestClient.getAllUsers()).thenReturn(userDTOs);
+        UserDTO user1 = new UserDTO(1L, "John", "Doe", "john_doe", "john@example.com");
+        UserDTO user2 = new UserDTO(2L, "Jane", "Doe", "jane_doe", "jane@example.com");
+        UserDTO[] users = {user1, user2};
 
-        List<User> users = userServiceClient.fetchAllUsers();
+        when(restTemplate.getForObject(baseUrl + "/users", UserDTO[].class)).thenReturn(users);
 
-        assertEquals(userDTOs.size(), users.size());
+        List<UserDTO> userList = userServiceClient.fetchAllUsers();
+
+        verify(restTemplate, times(1)).getForObject(baseUrl + "/users", UserDTO[].class);
+        assertNotNull(userList);
+        assertEquals(2, userList.size());
+        assertEquals("john_doe", userList.get(0).getUsername());
     }
 
     @Test
     public void testCreateUser() {
-        User user = new User();
-        user.setFirstName("John");
-        user.setLastName("Doe");
-        user.setUsername("johndoe");
-        user.setEmail("john.doe@example.com");
+        UserDTO userDTO = new UserDTO(1L, "John", "Doe", "john_doe", "john@example.com");
 
-        UserDTO userDTO = new UserDTO();
-        userDTO.setId(1L);
-        userDTO.setFirstName("John");
-        userDTO.setLastName("Doe");
-        userDTO.setUsername("johndoe");
-        userDTO.setEmail("john.doe@example.com");
+        when(restTemplate.postForObject(baseUrl + "/users", userDTO, UserDTO.class)).thenReturn(userDTO);
 
-        when(userRestClient.addUser(any(UserDTO.class))).thenReturn(userDTO);
+        UserDTO createdUser = userServiceClient.createUser(userDTO);
 
-        UserDTO createdUserDTO = userServiceClient.createUser(user);
-
-        assertEquals(userDTO, createdUserDTO);
+        verify(restTemplate, times(1)).postForObject(baseUrl + "/users", userDTO, UserDTO.class);
+        assertNotNull(createdUser);
+        assertEquals("john_doe", createdUser.getUsername());
     }
 
     @Test
     public void testModifyUser() {
-        User user = new User();
-        user.setFirstName("Jane");
-        user.setLastName("Doe");
-        user.setUsername("janedoe");
-        user.setEmail("jane.doe@example.com");
+        UserDTO userDTO = new UserDTO(1L, "John", "Doe", "john_doe", "john@example.com");
 
-        UserDTO userDTO = new UserDTO();
-        userDTO.setId(1L);
-        userDTO.setFirstName("Jane");
-        userDTO.setLastName("Doe");
-        userDTO.setUsername("janedoe");
-        userDTO.setEmail("jane.doe@example.com");
+        doNothing().when(restTemplate).put(baseUrl + "/users/1", userDTO);
 
-        when(userRestClient.updateUser(eq(1L), any(UserDTO.class))).thenReturn(userDTO);
+        userServiceClient.modifyUser(1L, userDTO);
 
-        UserDTO updatedUserDTO = userServiceClient.modifyUser(1L, user);
-
-        assertEquals(userDTO, updatedUserDTO);
+        verify(restTemplate, times(1)).put(baseUrl + "/users/1", userDTO);
     }
 
     @Test
     public void testRemoveUser() {
-        // Create and add a user
-        User user = new User();
-        user.setId(1L);
-        user.setFirstName("John");
-        user.setLastName("Doe");
-        user.setUsername("johndoe");
-        user.setEmail("john.doe@example.com");
+        doNothing().when(restTemplate).delete(baseUrl + "/users/1");
 
-        userServiceClient.createUser(user);
-
-        // Remove the user
         userServiceClient.removeUser(1L);
 
-        // Verify that the delete method on userRestClient was called with the correct ID
-        verify(userRestClient, times(1)).deleteUser(1L);
+        verify(restTemplate, times(1)).delete(baseUrl + "/users/1");
     }
 }

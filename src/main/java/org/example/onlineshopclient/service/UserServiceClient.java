@@ -1,112 +1,81 @@
 package org.example.onlineshopclient.service;
 
-import org.example.onlineshopclient.UserRestClient;
 import org.example.onlineshopclient.model.dto.UserDTO;
-import org.example.onlineshopclient.model.entity.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UserServiceClient {
 
-    private final UserRestClient userRestClient;
+    private final RestTemplate restTemplate;
+    private final String baseUrl;
 
     @Autowired
-    public UserServiceClient(UserRestClient userRestClient) {
-        this.userRestClient = userRestClient;
+    public UserServiceClient(RestTemplate restTemplate, String baseUrl) {
+        this.restTemplate = restTemplate;
+        this.baseUrl = baseUrl;
     }
 
-    public List<User> fetchAllUsers() {
-        List<UserDTO> userDTOs = userRestClient.getAllUsers();
-        List<User> users = userDTOs.stream()
-                .map(this::convertToEntity)
-                .collect(Collectors.toList());
+    public List<UserDTO> fetchAllUsers() {
+        System.out.println("Fetching all users from: " + baseUrl + "/users");
+        UserDTO[] userDTOs = restTemplate.getForObject(baseUrl + "/users", UserDTO[].class);
 
-        // Показване на потребителите на конзолата
-        users.forEach(user -> {
-            System.out.println("User ID: " + user.getId());
-            System.out.println("First Name: " + user.getFirstName());
-            System.out.println("Last Name: " + user.getLastName());
-            System.out.println("Username: " + user.getUsername());
-            System.out.println("Email: " + user.getEmail());
-            System.out.println("--------------");
-        });
-
-        return users;
-    }
-
-    public UserDTO createUser(User user) {
-        UserDTO userDTO = convertToDTO(user);
-        UserDTO createdUserDTO = userRestClient.addUser(userDTO);
-
-        if (createdUserDTO == null) {
-            System.out.println("Error: Created UserDTO is null");
-            return null;
+        if (userDTOs != null && userDTOs.length > 0) {
+            System.out.println("Received " + userDTOs.length + " users:");
+            for (UserDTO user : userDTOs) {
+                printUserDetails(user);
+            }
+        } else {
+            System.out.println("No users found.");
         }
 
-        User createdUser = convertToEntity(createdUserDTO);
+        return Arrays.asList(userDTOs);
+    }
 
-        // Показване на създадения потребител на конзолата
-        System.out.println("Created User ID: " + createdUser.getId());
-        System.out.println("First Name: " + createdUser.getFirstName());
-        System.out.println("Last Name: " + createdUser.getLastName());
-        System.out.println("Username: " + createdUser.getUsername());
-        System.out.println("Email: " + createdUser.getEmail());
-        System.out.println("--------------");
+    public UserDTO createUser(UserDTO userDTO) {
+        System.out.println("Creating user at: " + baseUrl + "/users");
+        System.out.println("UserDTO to be sent: " + userDTO.getUsername());
+
+        UserDTO createdUserDTO = restTemplate.postForObject(baseUrl + "/users", userDTO, UserDTO.class);
+
+        if (createdUserDTO != null) {
+            System.out.println("User created successfully:");
+            printUserDetails(createdUserDTO);
+        } else {
+            System.out.println("Failed to create user.");
+        }
 
         return createdUserDTO;
     }
 
-    public UserDTO modifyUser(Long id, User user) {
-        UserDTO userDTO = convertToDTO(user);
-        UserDTO updatedUserDTO = userRestClient.updateUser(id, userDTO);
+    public void modifyUser(Long id, UserDTO userDTO) {
+        System.out.println("Updating user with ID " + id + " at: " + baseUrl + "/users/" + id);
+        System.out.println("UserDTO to be updated: " + userDTO.getUsername());
 
-        if (updatedUserDTO == null) {
-            System.out.println("Error: Updated UserDTO is null");
-            return null;
-        }
+        restTemplate.put(baseUrl + "/users/" + id, userDTO);
 
-        User updatedUser = convertToEntity(updatedUserDTO);
-
-        // Показване на актуализирания потребител на конзолата
-        System.out.println("Updated User ID: " + updatedUser.getId());
-        System.out.println("First Name: " + updatedUser.getFirstName());
-        System.out.println("Last Name: " + updatedUser.getLastName());
-        System.out.println("Username: " + updatedUser.getUsername());
-        System.out.println("Email: " + updatedUser.getEmail());
-        System.out.println("--------------");
-
-        return updatedUserDTO;
+        System.out.println("User with ID " + id + " has been updated successfully.");
     }
+
+
+
 
     public void removeUser(Long id) {
-        userRestClient.deleteUser(id);
+        System.out.println("Deleting user with ID " + id + " at: " + baseUrl + "/users/" + id);
+        restTemplate.delete(baseUrl + "/users/" + id);
+        System.out.println("User with ID " + id + " has been deleted successfully.");
+    }
 
-        // Показване на изтрития потребител на конзолата
-        System.out.println("Deleted User ID: " + id);
+    private void printUserDetails(UserDTO userDTO) {
+        System.out.println("User ID: " + userDTO.getId());
+        System.out.println("First Name: " + userDTO.getFirstName());
+        System.out.println("Last Name: " + userDTO.getLastName());
+        System.out.println("Username: " + userDTO.getUsername());
+        System.out.println("Email: " + userDTO.getEmail());
         System.out.println("--------------");
-    }
-
-    private UserDTO convertToDTO(User user) {
-        UserDTO userDTO = new UserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setFirstName(user.getFirstName());
-        userDTO.setLastName(user.getLastName());
-        userDTO.setUsername(user.getUsername());
-        userDTO.setEmail(user.getEmail());
-        return userDTO;
-    }
-
-    private User convertToEntity(UserDTO userDTO) {
-        User user = new User();
-        user.setId(userDTO.getId());
-        user.setFirstName(userDTO.getFirstName());
-        user.setLastName(userDTO.getLastName());
-        user.setUsername(userDTO.getUsername());
-        user.setEmail(userDTO.getEmail());
-        return user;
     }
 }

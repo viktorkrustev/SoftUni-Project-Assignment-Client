@@ -6,7 +6,18 @@ public class UserDTO {
     private String lastName;
     private String username;
     private String email;
+    private String password;
 
+    public UserDTO() {
+    }
+
+    public UserDTO(Long id, String firstName, String lastName, String username, String email) {
+        this.id = id;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.username = username;
+        this.email = email;
+    }
 
     public Long getId() {
         return id;
@@ -46,5 +57,13 @@ public class UserDTO {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 }
